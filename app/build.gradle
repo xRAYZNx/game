@@ -1,0 +1,23 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.arabaoyunu'
+    compileSdkVersion 28
+
+    defaultConfig {
+        applicationId 'com.arabaoyunu'
+        minSdkVersion 21
+        targetSdkVersion 28
+        versionCode 1
+        versionName '0.5.0'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    aaptOptions {
+        noCompress 'glb', 'wav', 'ogg', 'mp3', 'mp4'
+    }
+}
