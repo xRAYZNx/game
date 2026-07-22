@@ -10,6 +10,7 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 import com.arabaoyunu.audio.GameAudioManager;
+import com.arabaoyunu.combat.CombatInputView;
 import com.arabaoyunu.core.GameSurfaceView;
 import com.arabaoyunu.input.TouchControlsView;
 import com.arabaoyunu.menu.GameScreenState;
@@ -22,6 +23,7 @@ public final class MainActivity extends Activity {
 
     private GameSurfaceView gameSurfaceView;
     private TouchControlsView touchControlsView;
+    private CombatInputView combatInputView;
     private HudView hudView;
     private MenuOverlayView menuOverlayView;
     private LoadingVideoOverlayView loadingOverlayView;
@@ -32,6 +34,22 @@ public final class MainActivity extends Activity {
     private boolean introLoadingActive;
     private boolean openWorldLoadingActive;
     private long loadingStartMs;
+
+    // A64: Savas katmani oyun dongusu (silah, kayma, scope gecisi).
+    private final Handler combatHandler = new Handler(Looper.getMainLooper());
+    private long combatLastTickMs;
+    private boolean combatLoopActive;
+    private final Runnable combatTickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!combatLoopActive || combatInputView == null) return;
+            long now = System.currentTimeMillis();
+            float dt = combatLastTickMs > 0L ? (now - combatLastTickMs) / 1000f : 0.016f;
+            combatLastTickMs = now;
+            combatInputView.tickGame(dt, now);
+            combatHandler.postDelayed(this, 16L);
+        }
+    };
 
     private static final String[] INTRO_HINTS = new String[] {
             "Motor yükseltmeleri hızlanmayı artırır.",
@@ -71,6 +89,39 @@ public final class MainActivity extends Activity {
             }
         });
         hudView = new HudView(this);
+        combatInputView = new CombatInputView(this);
+        combatInputView.setAudioManager(audioManager);
+        combatInputView.setCombatListener(new CombatInputView.CombatListener() {
+            @Override
+            public void onThrowableSelected(int slot) {
+                if (audioManager != null) audioManager.playSelect();
+            }
+
+            @Override
+            public void onShotFired() {
+                if (audioManager != null) audioManager.playImpactFeedback(false);
+            }
+
+            @Override
+            public void onJump() {
+                if (audioManager != null) audioManager.playCountdown(3);
+            }
+
+            @Override
+            public void onSlideStarted() {
+                if (audioManager != null) audioManager.playDriftSkidTick();
+            }
+
+            @Override
+            public void onSlideEnded() {
+                if (audioManager != null) audioManager.playMenuClick();
+            }
+
+            @Override
+            public void onScopeChanged(boolean scoped) {
+                if (audioManager != null) audioManager.playSelect();
+            }
+        });
         gameSurfaceView = new GameSurfaceView(this, touchControlsView, hudView, screenState);
         gameSurfaceView.getGameRenderer().setAudioManager(audioManager);
         gameSurfaceView.getGameRenderer().setUiBridge(new com.arabaoyunu.core.GameRenderer.UiBridge() {
@@ -118,6 +169,9 @@ public final class MainActivity extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
         root.addView(touchControlsView, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        root.addView(combatInputView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
         root.addView(menuOverlayView, new FrameLayout.LayoutParams(
@@ -289,11 +343,25 @@ public final class MainActivity extends Activity {
             else audioManager.resume();
         }
         if (touchControlsView != null) touchControlsView.setVisibility(driving ? View.VISIBLE : View.GONE);
+        if (combatInputView != null) combatInputView.setVisibility(driving ? View.VISIBLE : View.GONE);
+        if (driving) startCombatLoop(); else stopCombatLoop();
         if (hudView != null) hudView.setVisibility(driving ? View.VISIBLE : View.GONE);
         if (menuOverlayView != null) menuOverlayView.setVisibility(driving ? View.GONE : View.VISIBLE);
         if (loadingOverlayView != null && loadingOverlayView.getVisibility() == View.VISIBLE) {
             loadingOverlayView.bringToFront();
         }
+    }
+
+    private void startCombatLoop() {
+        if (combatLoopActive) return;
+        combatLoopActive = true;
+        combatLastTickMs = System.currentTimeMillis();
+        combatHandler.post(combatTickRunnable);
+    }
+
+    private void stopCombatLoop() {
+        combatLoopActive = false;
+        combatHandler.removeCallbacks(combatTickRunnable);
     }
 
     @Override
@@ -303,6 +371,9 @@ public final class MainActivity extends Activity {
         if (audioManager != null) {
             audioManager.resume();
             audioManager.setDriving(screenState != null && screenState.isDriving());
+        }
+        if (screenState != null && screenState.isDriving()) {
+            startCombatLoop();
         }
         if (gameSurfaceView != null) {
             gameSurfaceView.onResume();
@@ -314,6 +385,7 @@ public final class MainActivity extends Activity {
         introLoadingActive = false;
         openWorldLoadingActive = false;
         loadingHandler.removeCallbacksAndMessages(null);
+        stopCombatLoop();
         if (loadingOverlayView != null) loadingOverlayView.hideOverlay();
         if (audioManager != null) audioManager.pause();
         if (gameSurfaceView != null) {
@@ -325,6 +397,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         loadingHandler.removeCallbacksAndMessages(null);
+        stopCombatLoop();
         if (loadingOverlayView != null) loadingOverlayView.hideOverlay();
         if (audioManager != null) {
             audioManager.stop();
