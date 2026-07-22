@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">ArabaOyunu 5</string>
+
+    <!-- A64: Ana menu ve savas HUD metinleri. -->
+    <string name="menu_nav_title">NAVIGASYON</string>
+    <string name="menu_profile_title">PROFIL</string>
+    <string name="menu_social_title">SOSYAL</string>
+    <string name="hud_fire">ATES</string>
+    <string name="hud_scope">DRBN</string>
+    <string name="hud_jump">ZIPLA</string>
+    <string name="hud_slide">KAY</string>
+    <string name="hud_lean_left">EG L</string>
+    <string name="hud_lean_right">EG R</string>
+    <string name="wheel_bomba">BOMBA</string>
+    <string name="wheel_molotof">MOLOTOF</string>
+    <string name="wheel_c4">C4</string>
+    <string name="wheel_cancel">IPTAL</string>
 </resources>

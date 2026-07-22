@@ -1,3 +1,12 @@
 <resources>
     <color name="black">#000000</color>
+
+    <!-- A64: Espor/neon tema paleti (ana menu + savas HUD). -->
+    <color name="neon_cyan">#00DCFF</color>
+    <color name="neon_magenta">#FF5AC8</color>
+    <color name="neon_green">#78FFAA</color>
+    <color name="neon_gold">#FFDC5A</color>
+    <color name="neon_panel_bg">#F2060C18</color>
+    <color name="neon_panel_stroke">#C800D2FF</color>
+    <color name="neon_text_primary">#FFF0F8FF</color>
 </resources>
